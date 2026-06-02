@@ -1,0 +1,17 @@
+{
+  "name": "轻记 - 文件夹记事本",
+  "short_name": "轻记",
+  "description": "一款支持文件夹分类的简洁记事本",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fffcf9",
+  "theme_color": "#fffcf9",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23c79a6e' width='100' height='100' rx='20'/><text x='50' y='68' font-size='55' text-anchor='middle' fill='white'>📒</text></svg>",
+      "sizes": "100x100",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  
+  <!-- PWA 核心：manifest 文件链接 -->
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- iOS Safari 支持 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="轻记">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%23c79a6e' width='100' height='100' rx='20'/><text x='50' y='68' font-size='55' text-anchor='middle' fill='white'>📒</text></svg>">
+  
+  <!-- 主题色 -->
+  <meta name="theme-color" content="#fffcf9">
+  
+  <title>轻记 · 文件夹记事本</title>
+  
+  <style>
+    /* 所有样式保持不变（和之前回答中的完全一样） */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, Roboto, 'Helvetica Neue', sans-serif;
+      background: #f5f2f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 12px;
+    }
+
+    .phone-app {
+      max-width: 400px;
+      width: 100%;
+      height: 700px;
+      background: #fffcf9;
+      border-radius: 40px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.15), 0 0 0 8px #f0e7de;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .status-bar {
+      padding: 12px 20px 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #5e4b3c;
+      font-weight: 500;
+      background: #fffcf9;
+    }
+
+    .app-header {
+      padding: 8px 20px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fffcf9;
+      border-bottom: 1px solid #ede3d6;
+    }
+
+    .app-header h1 {
+      font-size: 26px;
+      font-weight: 600;
+      color: #4a3628;
+      letter-spacing: 1px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: #7b5e4b;
+      cursor: pointer;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f7f0e9;
+      transition: background 0.2s;
+    }
+
+    .icon-btn:active {
+      background: #e5d5c0;
+    }
+
+    .category-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 14px 20px 10px;
+      background: #fffcf9;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      border-bottom: 1px solid #efe4d7;
+    }
+    .category-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cat-tab {
+      padding: 6px 16px;
+      border-radius: 30px;
+      background: #f3ede7;
+      color: #5f4a38;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+
+    .cat-tab.active {
+      background: #d9b382;
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 6px 10px rgba(180, 130, 70, 0.25);
+    }
+
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px 10px;
+      background: #fefbf7;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .folder-item {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+      border: 1px solid #f2e7d9;
+      transition: transform 0.1s;
+      cursor: pointer;
+    }
+
+    .folder-item:active {
+      background: #faf5ef;
+      transform: scale(0.99);
+    }
+
+    .folder-icon {
+      font-size: 28px;
+      width: 40px;
+      text-align: center;
+    }
+
+    .folder-info {
+      flex: 1;
+    }
+    .folder-name {
+      font-weight: 600;
+      font-size: 16px;
+      color: #3e2e21;
+    }
+    .folder-meta {
+      font-size: 12px;
+      color: #aa8e7c;
+      margin-top: 2px;
+    }
+
+    .note-item {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.04);
+      border: 1px solid #f2e7d9;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .note-item:active {
+      background: #fdf9f4;
+    }
+    .note-title {
+      font-weight: 600;
+      font-size: 16px;
+      color: #3b2c1e;
+    }
+    .note-preview {
+      font-size: 13px;
+      color: #937b68;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .note-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: #b9a18b;
+    }
+    .note-category-badge {
+      background: #f3e9db;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      color: #6b4f3a;
+      font-weight: 500;
+    }
+
+    .empty-message {
+      text-align: center;
+      color: #c7b6a4;
+      padding: 32px;
+      font-style: italic;
+    }
+
+    .fab-new {
+      position: absolute;
+      bottom: 24px;
+      right: 20px;
+      background: #c79a6e;
+      color: white;
+      border: none;
+      width: 54px;
+      height: 54px;
+      border-radius: 30px;
+      font-size: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 20px rgba(180, 120, 60, 0.5);
+      cursor: pointer;
+      transition: all 0.2s;
+      z-index: 20;
+    }
+    .fab-new:active {
+      background: #b2824e;
+      transform: scale(0.94);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      visibility: hidden;
+      opacity: 0;
+      transition: 0.2s ease;
+    }
+    .modal-overlay.active {
+      visibility: visible;
+      opacity: 1;
+    }
+    .modal-card {
+      background: #fffbf5;
+      border-radius: 28px;
+      padding: 22px 20px;
+      width: 300px;
+      box-shadow: 0 20px 35px rgba(100, 60, 20, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .modal-card h3 {
+      color: #4e3624;
+      font-size: 20px;
+    }
+    .modal-input {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid #e2cfb5;
+      background: #fffefb;
+      font-size: 15px;
+      outline: none;
+    }
+    textarea.modal-input {
+      resize: vertical;
+      height: 80px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn {
+      padding: 10px 18px;
+      border-radius: 25px;
+      border: none;
+      font-weight: 600;
+      background: #ede0d0;
+      color: #4f3a28;
+      cursor: pointer;
+    }
+    .btn.primary {
+      background: #c79a6e;
+      color: white;
+    }
+
+    select.modal-input {
+      appearance: none;
+      background: #fffefb;
+    }
+
+    /* 安装提示条 */
+    .install-banner {
+      background: #d9b382;
+      color: white;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-weight: 500;
+      display: none;
+    }
+    .install-banner.show {
+      display: flex;
+    }
+    .install-btn {
+      background: white;
+      color: #5e3a1c;
+      border: none;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone-app">
+  <!-- 安装提示条 -->
+  <div class="install-banner" id="installBanner">
+    <span>📲 点击安装到手机桌面</span>
+    <button class="install-btn" id="installBtn">安装</button>
+  </div>
+
+  <div class="status-bar">
+    <span>9:41</span>
+    <span>📶 🔋 91%</span>
+  </div>
+
+  <div class="app-header">
+    <h1>📒 轻记</h1>
+    <div class="header-actions">
+      <button class="icon-btn" id="addFolderBtn" title="新建文件夹">📁</button>
+    </div>
+  </div>
+
+  <!-- 动态分类标签 -->
+  <div class="category-tabs" id="categoryTabs"></div>
+
+  <div class="content-area" id="contentList"></div>
+
+  <button class="fab-new" id="fabAddNote" title="新建笔记">+</button>
+</div>
+
+<!-- 笔记编辑模态框 -->
+<div class="modal-overlay" id="noteModal">
+  <div class="modal-card">
+    <h3 id="modalTitle">新建笔记</h3>
+    <input type="text" class="modal-input" id="noteTitleInput" placeholder="标题">
+    <textarea class="modal-input" id="noteContentInput" placeholder="写点什么..."></textarea>
+    <select class="modal-input" id="noteCategorySelect"></select>
+    <div class="modal-actions">
+      <button class="btn" id="cancelNoteBtn">取消</button>
+      <button class="btn primary" id="saveNoteBtn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 文件夹创建模态框 -->
+<div class="modal-overlay" id="folderModal">
+  <div class="modal-card">
+    <h3>新建文件夹</h3>
+    <input type="text" class="modal-input" id="folderNameInput" placeholder="文件夹名称">
+    <div class="modal-actions">
+      <button class="btn" id="cancelFolderBtn">取消</button>
+      <button class="btn primary" id="saveFolderBtn">创建</button>
+    </div>
+  </div>
+</div>
+
+<!-- PWA 安装脚本 -->
+<script>
+  // ---------- PWA 安装逻辑 ----------
+  let deferredPrompt;
+  const installBanner = document.getElementById('installBanner');
+  const installBtn = document.getElementById('installBtn');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // 阻止默认的安装提示
+    e.preventDefault();
+    // 保存事件以便后续触发
+    deferredPrompt = e;
+    // 显示自定义安装提示
+    installBanner.classList.add('show');
+  });
+
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    // 触发安装提示
+    deferredPrompt.prompt();
+    // 等待用户选择
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`用户选择: ${outcome}`);
+    // 清除保存的事件
+    deferredPrompt = null;
+    // 隐藏提示条
+    installBanner.classList.remove('show');
+  });
+
+  // 如果应用已经安装，隐藏提示
+  window.addEventListener('appinstalled', () => {
+    installBanner.classList.remove('show');
+    console.log('PWA 已成功安装');
+  });
+
+  // 注册 Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(registration => {
+          console.log('ServiceWorker 注册成功:', registration.scope);
+        })
+        .catch(err => {
+          console.log('ServiceWorker 注册失败:', err);
+        });
+    });
+  }
+</script>
+
+<!-- 主应用脚本 -->
+<script>
+  (function() {
+    // ---------- 数据存储 ----------
+    const STORAGE_NOTES = 'foldernotes_notes';
+    const STORAGE_FOLDERS = 'foldernotes_folders';
+
+    const DEFAULT_FOLDERS = [
+      { id: 'folder_personal', name: '个人' },
+      { id: 'folder_work', name: '工作' },
+      { id: 'folder_ideas', name: '灵感' }
+    ];
+
+    let folders = [];
+    let notes = [];
+    let currentFilter = 'all';
+
+    function loadData() {
+      const savedFolders = localStorage.getItem(STORAGE_FOLDERS);
+      if (savedFolders) {
+        folders = JSON.parse(savedFolders);
+      } else {
+        folders = [...DEFAULT_FOLDERS];
+      }
+
+      const savedNotes = localStorage.getItem(STORAGE_NOTES);
+      if (savedNotes) {
+        notes = JSON.parse(savedNotes);
+      } else {
+        notes = [
+          { id: 'n1', title: '超市购物清单', content: '牛奶、面包、咖啡豆', folderId: 'folder_personal', createdAt: Date.now() - 3600000 },
+          { id: 'n2', title: '项目计划草案', content: '下周一前完成原型设计', folderId: 'folder_work', createdAt: Date.now() - 7200000 },
+          { id: 'n3', title: '旅行灵感', content: '京都红叶季路线', folderId: 'folder_ideas', createdAt: Date.now() - 10800000 }
+        ];
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_FOLDERS, JSON.stringify(folders));
+      localStorage.setItem(STORAGE_NOTES, JSON.stringify(notes));
+    }
+
+    function generateId(prefix = 'id') {
+      return prefix + '_' + Date.now() + Math.random().toString(36).substr(2, 6);
+    }
+
+    // ---------- UI 元素 ----------
+    const categoryTabsEl = document.getElementById('categoryTabs');
+    const contentListEl = document.getElementById('contentList');
+    const noteCategorySelect = document.getElementById('noteCategorySelect');
+
+    function renderCategoryTabs() {
+      let html = `<button class="cat-tab ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">📋 全部</button>`;
+      folders.forEach(folder => {
+        html += `<button class="cat-tab ${currentFilter === folder.id ? 'active' : ''}" data-filter="${folder.id}">📁 ${escapeHtml(folder.name)}</button>`;
+      });
+      categoryTabsEl.innerHTML = html;
+
+      document.querySelectorAll('.cat-tab').forEach(tab => {
+        tab.addEventListener('click', function() {
+          setCurrentFilter(this.dataset.filter);
+        });
+      });
+    }
+
+    function updateCategorySelect() {
+      let options = '';
+      folders.forEach(folder => {
+        options += `<option value="${folder.id}">${escapeHtml(folder.name)}</option>`;
+      });
+      if (folders.length === 0) {
+        options = '<option value="">-- 请先创建文件夹 --</option>';
+      }
+      noteCategorySelect.innerHTML = options;
+    }
+
+    function getFilteredNotes() {
+      if (currentFilter === 'all') return notes;
+      return notes.filter(note => note.folderId === currentFilter);
+    }
+
+    function getFolderName(folderId) {
+      const folder = folders.find(f => f.id === folderId);
+      return folder ? folder.name : '未分类';
+    }
+
+    function renderContentList() {
+      const filteredNotes = getFilteredNotes();
+
+      if (currentFilter === 'all') {
+        let html = '';
+        if (folders.length > 0) {
+          folders.forEach(folder => {
+            const noteCount = notes.filter(n => n.folderId === folder.id).length;
+            html += `
+              <div class="folder-item" data-folder-id="${folder.id}">
+                <span class="folder-icon">📂</span>
+                <div class="folder-info">
+                  <div class="folder-name">${escapeHtml(folder.name)}</div>
+                  <div class="folder-meta">${noteCount} 条笔记</div>
+                </div>
+                <span style="color:#b9a18b;">›</span>
+              </div>
+            `;
+          });
+        }
+        if (notes.length === 0 && folders.length === 0) {
+          html += '<div class="empty-message">✨ 点击下方 + 创建笔记</div>';
+        } else if (notes.length > 0) {
+          html += '<div style="margin-top:6px; font-weight:500; color:#7b5e4b; padding:4px 0;">📌 最近笔记</div>';
+          notes.slice().sort((a,b) => b.createdAt - a.createdAt).forEach(note => {
+            html += createNoteItemHTML(note);
+          });
+        } else if (folders.length > 0 && notes.length === 0) {
+          html += '<div class="empty-message">还没有笔记，点击文件夹或新建</div>';
+        }
+        contentListEl.innerHTML = html;
+      } else {
+        if (filteredNotes.length === 0) {
+          contentListEl.innerHTML = '<div class="empty-message">📭 此文件夹暂无笔记</div>';
+        } else {
+          let html = '';
+          filteredNotes.sort((a,b) => b.createdAt - a.createdAt).forEach(note => {
+            html += createNoteItemHTML(note);
+          });
+          contentListEl.innerHTML = html;
+        }
+      }
+
+      document.querySelectorAll('.folder-item').forEach(item => {
+        item.addEventListener('click', function() {
+          setCurrentFilter(this.dataset.folderId);
+        });
+      });
+
+      document.querySelectorAll('.note-item').forEach(item => {
+        item.addEventListener('click', function() {
+          openNoteEditor(this.dataset.noteId);
+        });
+      });
+    }
+
+    function createNoteItemHTML(note) {
+      const folderName = getFolderName(note.folderId);
+      const preview = note.content ? note.content.substring(0, 35) : '';
+      const timeStr = new Date(note.createdAt).toLocaleDateString('zh-CN', {month:'short', day:'numeric'});
+      return `
+        <div class="note-item" data-note-id="${note.id}">
+          <div class="note-title">${escapeHtml(note.title) || '无标题'}</div>
+          <div class="note-preview">${escapeHtml(preview) || '空内容'}</div>
+          <div class="note-footer">
+            <span class="note-category-badge">📁 ${escapeHtml(folderName)}</span>
+            <span>${timeStr}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function escapeHtml(text) {
+      return String(text).replace(/[&<>"]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        if (m === '"') return '&quot;';
+        return m;
+      });
+    }
+
+    function setCurrentFilter(filterId) {
+      currentFilter = filterId;
+      renderCategoryTabs();
+      renderContentList();
+    }
+
+    function refreshUI() {
+      renderCategoryTabs();
+      updateCategorySelect();
+      renderContentList();
+    }
+
+    // ---------- 笔记编辑 ----------
+    function openNoteEditor(noteId = null) {
+      const modal = document.getElementById('noteModal');
+      const titleInput = document.getElementById('noteTitleInput');
+      const contentInput = document.getElementById('noteContentInput');
+      const selectEl = document.getElementById('noteCategorySelect');
+      const modalTitle = document.getElementById('modalTitle');
+
+      updateCategorySelect();
+
+      if (noteId) {
+        const note = notes.find(n => n.id === noteId);
+        if (!note) return;
+        modalTitle.textContent = '编辑笔记';
+        titleInput.value = note.title || '';
+        contentInput.value = note.content || '';
+        if (note.folderId && folders.some(f => f.id === note.folderId)) {
+          selectEl.value = note.folderId;
+        } else if (folders.length > 0) {
+          selectEl.value = folders[0].id;
+        }
+        modal.dataset.editingId = noteId;
+      } else {
+        modalTitle.textContent = '新建笔记';
+        titleInput.value = '';
+        contentInput.value = '';
+        if (folders.length > 0) {
+          selectEl.value = folders[0].id;
+        }
+        delete modal.dataset.editingId;
+      }
+      modal.classList.add('active');
+    }
+
+    function closeNoteModal() {
+      document.getElementById('noteModal').classList.remove('active');
+    }
+
+    function saveNoteFromModal() {
+      const titleInput = document.getElementById('noteTitleInput');
+      const contentInput = document.getElementById('noteContentInput');
+      const selectEl = document.getElementById('noteCategorySelect');
+      const modal = document.getElementById('noteModal');
+
+      const title = titleInput.value.trim();
+      const content = contentInput.value.trim();
+      const folderId = selectEl.value;
+
+      if (!title) {
+        alert('请输入标题');
+        return;
+      }
+      if (!folderId || !folders.some(f => f.id === folderId)) {
+        alert('请选择有效的文件夹');
+        return;
+      }
+
+      const editingId = modal.dataset.editingId;
+      if (editingId) {
+        const note = notes.find(n => n.id === editingId);
+        if (note) {
+          note.title = title;
+          note.content = content;
+          note.folderId = folderId;
+        }
+      } else {
+        notes.push({
+          id: generateId('note'),
+          title: title,
+          content: content,
+          folderId: folderId,
+          createdAt: Date.now()
+        });
+      }
+
+      saveData();
+      closeNoteModal();
+      refreshUI();
+    }
+
+    // ---------- 文件夹操作 ----------
+    function openFolderModal() {
+      document.getElementById('folderNameInput').value = '';
+      document.getElementById('folderModal').classList.add('active');
+    }
+
+    function closeFolderModal() {
+      document.getElementById('folderModal').classList.remove('active');
+    }
+
+    function createFolder() {
+      const input = document.getElementById('folderNameInput');
+      const name = input.value.trim();
+      if (!name) {
+        alert('请输入文件夹名称');
+        return;
+      }
+      folders.push({ id: generateId('folder'), name: name });
+      saveData();
+      closeFolderModal();
+      refreshUI();
+    }
+
+    // ---------- 事件绑定 ----------
+    document.getElementById('fabAddNote').addEventListener('click', () => {
+      if (folders.length === 0) {
+        alert('请先创建一个文件夹');
+        openFolderModal();
+        return;
+      }
+      openNoteEditor(null);
+    });
+
+    document.getElementById('addFolderBtn').addEventListener('click', openFolderModal);
+    document.getElementById('cancelNoteBtn').addEventListener('click', closeNoteModal);
+    document.getElementById('saveNoteBtn').addEventListener('click', saveNoteFromModal);
+    document.getElementById('cancelFolderBtn').addEventListener('click', closeFolderModal);
+    document.getElementById('saveFolderBtn').addEventListener('click', createFolder);
+
+    document.getElementById('noteModal').addEventListener('click', function(e) {
+      if (e.target === this) closeNoteModal();
+    });
+    document.getElementById('folderModal').addEventListener('click', function(e) {
+      if (e.target === this) closeFolderModal();
+    });
+
+    // ---------- 启动 ----------
+    loadData();
+    refreshUI();
+  })();
+</script>
+
+</body>
+</html>
